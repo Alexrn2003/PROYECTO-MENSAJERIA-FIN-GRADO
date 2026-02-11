@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login del chat</title>
+  <style>
+    /* 1. Reset de estilos básicos */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    body {
+      background-color: #f0f2f5;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    /* 2. Contenedor principal (Card) */
+    .login-container {
+      background-color: #ffffff;
+      padding: 2.5rem;
+      border-radius: 10px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+      width: 100%;
+      max-width: 400px;
+    }
+
+    h2 {
+      text-align: center;
+      color: #333;
+      margin-bottom: 1.5rem;
+      font-size: 1.8rem;
+    }
+
+    /* 3. Estilos del formulario */
+    .form-group {
+      margin-bottom: 1rem;
+    }
+
+    input {
+      width: 100%;
+      padding: 12px 15px;
+      margin: 8px 0;
+      display: inline-block;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 1rem;
+      transition: border-color 0.3s ease;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: #007bff;
+      box-shadow: 0 0 0 2px rgba(0,123,255,0.25);
+    }
+
+    /* 4. Botón estilizado */
+    button {
+      width: 100%;
+      background-color: #007bff;
+      color: white;
+      padding: 12px;
+      margin-top: 1rem;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 1rem;
+      font-weight: bold;
+      transition: background-color 0.3s ease;
+    }
+
+    button:hover {
+      background-color: #0056b3;
+    }
+
+    button:active {
+      transform: scale(0.98);
+    }
+
+    /* Mensaje de ayuda opcional */
+    .footer-text {
+      text-align: center;
+      margin-top: 1rem;
+      font-size: 0.85rem;
+      color: #666;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="login-container">
+    <h2>Iniciar Sesión</h2>
+
+    <form id="loginForm">
+      <div class="form-group">
+        <input type="text" id="user" placeholder="Usuario" required />  
+      </div>
+      <div class="form-group">
+        <input type="password" id="pass" placeholder="Contraseña" required />
+      </div>
+      <button type="submit">Entrar</button>
+    </form>
+
+    <p class="footer-text">Acceso restringido a personal del dominio EasyCom.local</p>
+  </div>
+
+  <script>
+    document.getElementById("loginForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const user = document.getElementById("user").value;
+      const pass = document.getElementById("pass").value;
+
+      // Nota: Cambia esta URL por tu endpoint real
+      try {
+        const response = await fetch("https://172.20.10.5:5000/login", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ user, password: pass })
+        });
+
+        const data = await response.json();
+        
+        if (data.success) {
+          alert("¡Login correcto!");
+        } else {
+          alert("Error: Usuario o contraseña incorrectos");
+        }
+      } catch (error) {
+        console.error("Error de conexión:", error);
+        alert("No se pudo conectar con el servidor.");
+      }
+    });
+  </script>
+
+</body>
+</html>
