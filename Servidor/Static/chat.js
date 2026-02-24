@@ -1,13 +1,9 @@
 const socket = io();
 
-// Obtener datos del usuario del sessionStorage (guardado en login)
+// Obtener datos del usuario del sessionStorage
 const username = sessionStorage.getItem("username");
 const display_name = sessionStorage.getItem("display_name") || username || "Usuario";
 const role = sessionStorage.getItem("role") || "user";
-
-// Mostrar información del usuario en la interfaz
-console.log(`✅ Usuario conectado: ${display_name} (${username})`);
-console.log(`👤 Rol: ${role}`);
 
 // Conectar usuario
 socket.emit("connect_user", { 
@@ -18,31 +14,55 @@ socket.emit("connect_user", {
 
 socket.on("message", (msg) => {
   const chat = document.getElementById("chat");
-  chat.innerHTML += msg + "<br>";
+  
+  // Limpiar el estado vacío si existe
+  const emptyState = chat.querySelector(".empty-state");
+  if (emptyState) {
+    emptyState.remove();
+  }
+  
+  // Parsear el mensaje si viene en formato JSON
+  let messageObj = typeof msg === 'string' ? JSON.parse(msg) : msg;
+  
+  const messageDiv = document.createElement("div");
+  messageDiv.className = `message ${messageObj.username === username ? 'own' : 'other'}`;
+  
+  messageDiv.innerHTML = `
+    <div class="message-user">${messageObj.display_name || messageObj.username}</div>
+    <div class="message-text">${escapeHtml(messageObj.text || messageObj.message)}</div>
+    <div class="message-timestamp">${new Date().toLocaleTimeString('es-ES', {hour: '2-digit', minute:'2-digit'})}</div>
+  `;
+  
+  chat.appendChild(messageDiv);
   chat.scrollTop = chat.scrollHeight;
 });
 
 function enviar() {
   const input = document.getElementById("msg");
-  const message = input.value;
-  if (message.trim() !== "") {
+  const message = input.value.trim();
+  if (message !== "") {
     socket.emit("send_message", { message });
     input.value = "";
+    input.focus();
   }
 }
 
-// Verificar que el usuario está autenticado y permitir enviar con Enter
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+// Verificar sesión y configurar UI
 window.addEventListener('load', () => {
   if (!username) {
     alert("No hay sesión activa. Redirigiendo al login...");
     window.location.href = "/";
   } else {
-    // Mostrar usuario en la página
-    const header = document.querySelector('h2');
-    if (header) {
-      header.textContent = `Chat Empresarial - ${display_name}`;
-    }
-    // Permitir enviar mensaje con Enter
+    // Mostrar información del usuario
+    document.getElementById("userDisplay").textContent = `${display_name} (${role})`;
+    
+    // Permitir enviar con Enter
     const input = document.getElementById("msg");
     if (input) {
       input.addEventListener("keydown", function(e) {
@@ -51,6 +71,7 @@ window.addEventListener('load', () => {
           enviar();
         }
       });
+      input.focus();
     }
   }
 });

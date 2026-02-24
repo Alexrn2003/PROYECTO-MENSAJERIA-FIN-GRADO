@@ -1,17 +1,46 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<title>Chat Corporativo</title>
-<script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
-<script src="/static/chat.js" defer></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chat Corporativo</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+  <script src="/static/chat.js" defer></script>
 </head>
-<body>
-<h2>Chat Empresarial</h2>
+<body class="chat-page">
+  
+  <div class="chat-header">
+    <div>
+      <h2>💬 Chat Corporativo</h2>
+    </div>
+    <div class="user-info">
+      <div class="user-badge">
+        <span id="userDisplay">Conectando...</span>
+      </div>
+      <button class="logout-btn" onclick="logout()">Cerrar Sesión</button>
+    </div>
+  </div>
 
-<div id="chat" style="height:300px; border:1px solid #000; overflow:auto;"></div>
-<input type="text" id="msg" placeholder="Escribe mensaje...">
-<button onclick="enviar()">Enviar</button>
+  <div class="chat-container">
+    <div class="chat-messages" id="chat">
+      <div class="empty-state">
+        <p>Bienvenido al chat. Empieza a escribir mensajes...</p>
+      </div>
+    </div>
+    
+    <div class="chat-input-area">
+      <input type="text" id="msg" placeholder="Escribe un mensaje..." />
+      <button class="send-btn" onclick="enviar()">Enviar</button>
+    </div>
+  </div>
+
+  <script>
+    function logout() {
+      sessionStorage.clear();
+      window.location.href = "/";
+    }
+  </script>
 
 </body>
 </html>

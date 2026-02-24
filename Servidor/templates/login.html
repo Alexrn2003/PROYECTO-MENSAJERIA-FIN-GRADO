@@ -3,115 +3,32 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Login del chat</title>
-  <style>
-    /* 1. Reset de estilos básicos */
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    }
-
-    body {
-      background-color: #f0f2f5;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-    }
-
-    /* 2. Contenedor principal (Card) */
-    .login-container {
-      background-color: #ffffff;
-      padding: 2.5rem;
-      border-radius: 10px;
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-      width: 100%;
-      max-width: 400px;
-    }
-
-    h2 {
-      text-align: center;
-      color: #333;
-      margin-bottom: 1.5rem;
-      font-size: 1.8rem;
-    }
-
-    /* 3. Estilos del formulario */
-    .form-group {
-      margin-bottom: 1rem;
-    }
-
-    input {
-      width: 100%;
-      padding: 12px 15px;
-      margin: 8px 0;
-      display: inline-block;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-      font-size: 1rem;
-      transition: border-color 0.3s ease;
-    }
-
-    input:focus {
-      outline: none;
-      border-color: #007bff;
-      box-shadow: 0 0 0 2px rgba(0,123,255,0.25);
-    }
-
-    /* 4. Botón estilizado */
-    button {
-      width: 100%;
-      background-color: #007bff;
-      color: white;
-      padding: 12px;
-      margin-top: 1rem;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 1rem;
-      font-weight: bold;
-      transition: background-color 0.3s ease;
-    }
-
-    button:hover {
-      background-color: #0056b3;
-    }
-
-    button:active {
-      transform: scale(0.98);
-    }
-
-    /* Mensaje de ayuda opcional */
-    .footer-text {
-      text-align: center;
-      margin-top: 1rem;
-      font-size: 0.85rem;
-      color: #666;
-    }
-  </style>
+  <title>Login - Chat Corporativo</title>
+  <link rel="stylesheet" href="/static/style.css">
 </head>
-<body>
+<body class="login-page">
 
   <div class="login-container">
     <h2>Iniciar Sesión</h2>
 
+    <div id="errorMsg" class="error-message"></div>
+    <div id="loadingMsg" class="loading">Autenticando...</div>
+
     <form id="loginForm">
       <div class="form-group">
-        <input type="text" id="user" placeholder="Usuario (dominio)" required autocomplete="username" />  
+        <label for="user">Usuario (dominio)</label>
+        <input type="text" id="user" placeholder="ej: administrador" required autocomplete="username" />  
       </div>
       <div class="form-group">
-        <input type="password" id="pass" placeholder="Contraseña" required autocomplete="current-password" />
+        <label for="pass">Contraseña</label>
+        <input type="password" id="pass" placeholder="Ingresa tu contraseña" required autocomplete="current-password" />
       </div>
-      <button type="submit" id="loginBtn">Entrar</button>
-      <div id="errorMsg" style="display: none; color: red; margin-top: 1rem; text-align: center;"></div>
-      <div id="loadingMsg" style="display: none; color: #007bff; margin-top: 1rem; text-align: center;">
-        Autenticando...
-      </div>
+      <button type="submit" id="loginBtn" class="login-btn">Entrar</button>
     </form>
 
-    <p class="footer-text">Acceso restringido a personal del dominio EasyCom.local</p>
+    <p style="text-align: center; margin-top: 1.5rem; font-size: 0.85rem; color: #999;">
+      Acceso restringido a personal del dominio EasyCom.local
+    </p>
   </div>
 
   <script>
@@ -126,16 +43,15 @@
 
       if (!user || !pass) {
         errorMsg.textContent = "Por favor completa todos los campos";
-        errorMsg.style.display = "block";
+        errorMsg.classList.add("show");
         return;
       }
 
-      errorMsg.style.display = "none";
-      loadingMsg.style.display = "block";
+      errorMsg.classList.remove("show");
+      loadingMsg.classList.add("show");
       loginBtn.disabled = true;
 
       try {
-        // Detectar si la URL actual es HTTP o HTTPS
         const protocol = window.location.protocol;
         const host = window.location.host;
         const url = `${protocol}//${host}/login`;
@@ -151,23 +67,21 @@
         const data = await response.json();
         
         if (data.success) {
-          // Guardar datos del usuario en sessionStorage
           sessionStorage.setItem("username", data.username);
           sessionStorage.setItem("display_name", data.display_name || data.username);
           sessionStorage.setItem("role", data.role);
           
-          // Redirigir al chat
           window.location.href = "/chat";
         } else {
           errorMsg.textContent = data.error || "Usuario o contraseña incorrectos";
-          errorMsg.style.display = "block";
+          errorMsg.classList.add("show");
         }
       } catch (error) {
         console.error("Error de conexión:", error);
         errorMsg.textContent = "No se pudo conectar con el servidor. Verifica la conexión.";
-        errorMsg.style.display = "block";
+        errorMsg.classList.add("show");
       } finally {
-        loadingMsg.style.display = "none";
+        loadingMsg.classList.remove("show");
         loginBtn.disabled = false;
       }
     });
