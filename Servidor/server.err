@@ -1,0 +1,16 @@
+WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://10.0.2.15:5000
+Press CTRL+C to quit
+127.0.0.1 - - [24/Feb/2026 08:51:43] "GET /socket.io/?EIO=4&transport=polling&t=PoEeU6l HTTP/1.1" 200 -
+127.0.0.1 - - [24/Feb/2026 08:51:44] "POST /socket.io/?EIO=4&transport=polling&t=PoEeV9s&sid=5pLviJtVfwS57h_WAAAA HTTP/1.1" 200 -
+127.0.0.1 - - [24/Feb/2026 08:51:44] "GET /socket.io/?EIO=4&transport=polling&t=PoEeVAA&sid=5pLviJtVfwS57h_WAAAA HTTP/1.1" 200 -
+127.0.0.1 - - [24/Feb/2026 08:51:44] "GET /socket.io/?EIO=4&transport=polling&t=PoEeVAJ&sid=5pLviJtVfwS57h_WAAAA HTTP/1.1" 200 -
+127.0.0.1 - - [24/Feb/2026 08:51:48] "GET /socket.io/?EIO=4&transport=polling&t=PoEeWNo HTTP/1.1" 200 -
+127.0.0.1 - - [24/Feb/2026 08:51:49] "POST /socket.io/?EIO=4&transport=polling&t=PoEeWOB&sid=2vLR7iH_BEuCdtdfAAAC HTTP/1.1" 200 -
+127.0.0.1 - - [24/Feb/2026 08:51:49] "GET /socket.io/?EIO=4&transport=polling&t=PoEeWOC&sid=2vLR7iH_BEuCdtdfAAAC HTTP/1.1" 200 -
+127.0.0.1 - - [24/Feb/2026 08:52:31] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [24/Feb/2026 08:52:32] "GET / HTTP/1.1" 200 -
+10.0.2.15 - - [24/Feb/2026 08:52:32] "GET / HTTP/1.1" 200 -
+192.168.1.1 - - [24/Feb/2026 08:52:32] "GET / HTTP/1.1" 200 -

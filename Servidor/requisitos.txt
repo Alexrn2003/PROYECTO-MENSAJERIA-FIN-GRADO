@@ -3,3 +3,4 @@ flask-cors
 flask-socketio
 ldap3
 eventlet
+python-dotenv
