@@ -13,11 +13,11 @@ def recibir_mensajes(sock):
         try:
             data = sock.recv(4096)
             if not data:
-                print("🔴 Conexión cerrada por el servidor.")
+                print(" Conexión cerrada por el servidor.")
                 break
             print(data.decode('utf-8'), end="")   # ya incluye \n
         except Exception:
-            print("🔴 Error recibiendo datos. Desconectado.")
+            print(" Error recibiendo datos. Desconectado.")
             break
 
 def main():
@@ -30,11 +30,11 @@ def main():
     # Crear socket TCP
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-    print("\n🔌 Conectando al servidor...")
+    print("\n Conectando al servidor...")
     try:
         sock.connect((server_ip, 5000))
     except Exception as e:
-        print(f"❌ Error al conectar: {e}")
+        print(f" Error al conectar: {e}")
         return
 
     print("🟢 Conectado. Esperando mensajes...\n")
@@ -51,12 +51,12 @@ def main():
         while True:
             msg = input()
             if msg.lower() in ("exit", "quit"):
-                print("🔴 Desconectando...")
+                print(" Desconectando...")
                 sock.close()
                 break
             sock.sendall(msg.encode('utf-8'))
     except KeyboardInterrupt:
-        print("\n🔴 Interrupción detectada, cerrando...")
+        print("\n Interrupción detectada, cerrando...")
         sock.close()
 
 if __name__ == "__main__":
