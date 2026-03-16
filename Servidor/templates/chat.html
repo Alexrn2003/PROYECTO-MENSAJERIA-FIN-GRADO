@@ -3,76 +3,302 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Chat Corporativo</title>
+  <title>EasyCom - Chat Corporativo</title>
   <link rel="stylesheet" href="/static/style.css">
   <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
 </head>
 <body class="chat-page">
-  
+
+  <!-- Cabecera superior -->
   <div class="chat-header">
-    <div>
-      <h2>💬 Chat Corporativo</h2>
+    <div class="header-izquierda">
+      <img src="/static/logotipo.png" class="logo" width="42" height="42">
+      <h2>EasyCom Chat</h2>
     </div>
-    <div class="user-info">
-      <div class="user-badge">
-        <span id="userDisplay">Conectando...</span>
-      </div>
-      <button class="logout-btn" onclick="logout()">Cerrar Sesión</button>
+    <div class="header-derecha">
+      <span id="nombre-usuario" class="user-badge">Cargando...</span>
+      <span id="depart-usuario" class="depart-badge"></span>
+      <button onclick="cerrarSesion()" class="logout-btn">Cerrar sesión</button>
     </div>
   </div>
 
-  <div class="chat-container">
-    <div class="chat-messages" id="chat">
-      <div class="empty-state">
-        <p>Bienvenido al chat. Empieza a escribir mensajes...</p>
+  <!-- Contenido: sidebar + área de chat -->
+  <div class="pagina-chat">
+
+    <!-- Barra lateral -->
+    <div class="sidebar">
+
+      <div class="sidebar-seccion">
+        <p class="sidebar-titulo">CANALES</p>
+
+        <div class="canal-item activo" id="btn-global" onclick="irACanal('global', '🌐 Global')">
+          # Global
+        </div>
+
+        <div class="canal-item" id="btn-depart" onclick="irACanal(miCanalDepart, '🏢 ' + miDepartamento)" style="display:none">
+          # <span id="nombre-depart-btn">Mi departamento</span>
+        </div>
+
+        <div class="canal-item" id="btn-directivos" onclick="irACanal('directivos', '👔 Directivos')" style="display:none">
+          # Directivos
+        </div>
       </div>
+
+      <div class="sidebar-seccion" style="margin-top: 20px;">
+        <p class="sidebar-titulo">MENSAJES DIRECTOS</p>
+        <div id="lista-usuarios">
+          <p class="sidebar-vacio">No hay más usuarios conectados</p>
+        </div>
+      </div>
+
     </div>
-    
-    <div class="chat-input-area">
-      <input type="text" id="msg" placeholder="Escribe un mensaje..." />
-      <button class="send-btn" onclick="enviar()">Enviar</button>
+
+    <!-- Área del chat -->
+    <div class="area-chat">
+
+      <div class="chat-cabecera-canal">
+        <span id="nombre-canal-actual">🌐 Global</span>
+      </div>
+
+      <div class="chat-mensajes" id="mensajes">
+        <p class="bienvenida">Bienvenido al chat. Escribe un mensaje para empezar.</p>
+      </div>
+
+      <div class="chat-input">
+        <input type="text" id="msg" placeholder="Escribe un mensaje..." autocomplete="off" />
+        <button onclick="enviar()" class="send-btn">Enviar</button>
+      </div>
+
     </div>
+
   </div>
 
   <script>
-    // Conectar con SocketIO
-    const socket = io();
+    // ---- Info del usuario (viene del sessionStorage al hacer login) ----
+    var miNombre      = sessionStorage.getItem("display_name") || "Usuario";
+    var miUsername    = sessionStorage.getItem("username") || "";
+    var miDepartamento = sessionStorage.getItem("departamento") || "";
+    var esDirectivo   = sessionStorage.getItem("es_directivo") === "true";
 
-    // Mostrar nombre de usuario si existe en sessionStorage
-    const userDisplay = document.getElementById("userDisplay");
-    const username = sessionStorage.getItem("display_name") || "Usuario";
-    userDisplay.textContent = username;
+    // Canal del departamento (en minúsculas para que coincida con el del servidor)
+    var miCanalDepart = miDepartamento ? miDepartamento.toLowerCase() : "";
 
-    // Avisar al servidor que el usuario se conectó
-    socket.emit("connect_user", {
-      username: username,
-      display_name: username,
-      role: sessionStorage.getItem("role") || "user"
+    // ---- Estado del chat ----
+    var canalActual   = "global";   // Canal de sala en el que estoy
+    var dmActual      = null;       // null = canal, string = username del DM
+
+    // ---- Mostrar info en cabecera ----
+    document.getElementById("nombre-usuario").textContent = miNombre;
+
+    if (miDepartamento) {
+      document.getElementById("depart-usuario").textContent = miDepartamento;
+    }
+
+    // ---- Mostrar botones según permisos ----
+    if (miDepartamento && miDepartamento !== "") {
+      document.getElementById("btn-depart").style.display = "block";
+      document.getElementById("nombre-depart-btn").textContent = miDepartamento;
+    }
+
+    if (esDirectivo) {
+      document.getElementById("btn-directivos").style.display = "block";
+    }
+
+    // ---- Conectar con el servidor ----
+    var socket = io();
+
+    // Mensaje de canal recibido
+    socket.on("nuevo_mensaje", function(data) {
+      // Solo mostrarlo si estamos en ese canal y no en un DM
+      if (dmActual === null && data.canal === canalActual) {
+        mostrarMensaje(data.usuario, data.mensaje, data.usuario === miNombre);
+      }
     });
 
-    // Función para enviar mensajes
+    // Mensaje del sistema (conexiones, desconexiones...)
+    socket.on("sistema", function(texto) {
+      if (dmActual === null && canalActual === "global") {
+        mostrarSistema(texto);
+      }
+    });
+
+    // Mensaje directo recibido
+    socket.on("nuevo_dm", function(data) {
+      var esDeMiDM = false;
+
+      if (data.es_propio && dmActual === data.para) {
+        esDeMiDM = true;
+      } else if (!data.es_propio && dmActual === data.de_user) {
+        esDeMiDM = true;
+      }
+
+      if (esDeMiDM) {
+        if (data.es_propio) {
+          mostrarMensaje("Tú", data.mensaje, true);
+        } else {
+          mostrarMensaje(data.de, data.mensaje, false);
+        }
+      }
+    });
+
+    // Lista de usuarios actualizada
+    socket.on("lista_usuarios", function(usuarios) {
+      var lista = document.getElementById("lista-usuarios");
+      lista.innerHTML = "";
+
+      var otros = usuarios.filter(function(u) {
+        return u.username !== miUsername;
+      });
+
+      if (otros.length === 0) {
+        lista.innerHTML = '<p class="sidebar-vacio">No hay más usuarios conectados</p>';
+        return;
+      }
+
+      otros.forEach(function(u) {
+        var div = document.createElement("div");
+        div.className = "usuario-item";
+        div.setAttribute("data-username", u.username);
+
+        var punto = document.createElement("span");
+        punto.className = "punto-verde";
+        punto.textContent = "● ";
+
+        var nombre = document.createElement("span");
+        nombre.textContent = u.display_name;
+
+        if (u.departamento) {
+          var depart = document.createElement("span");
+          depart.className = "usuario-depart";
+          depart.textContent = " · " + u.departamento;
+          div.appendChild(punto);
+          div.appendChild(nombre);
+          div.appendChild(depart);
+        } else {
+          div.appendChild(punto);
+          div.appendChild(nombre);
+        }
+
+        div.onclick = function() {
+          abrirDM(u.username, u.display_name);
+        };
+
+        lista.appendChild(div);
+      });
+    });
+
+    // ---- Funciones principales ----
+
+    function irACanal(canal, nombreVisible) {
+      dmActual    = null;
+      canalActual = canal;
+
+      // Quitar el activo de todos los botones
+      document.querySelectorAll(".canal-item").forEach(function(btn) {
+        btn.classList.remove("activo");
+      });
+
+      // Poner activo al botón correcto
+      if (canal === "global")       document.getElementById("btn-global").classList.add("activo");
+      if (canal === miCanalDepart)  document.getElementById("btn-depart").classList.add("activo");
+      if (canal === "directivos")   document.getElementById("btn-directivos").classList.add("activo");
+
+      document.getElementById("nombre-canal-actual").textContent = nombreVisible;
+      limpiarMensajes();
+    }
+
+    function abrirDM(username, displayName) {
+      dmActual = username;
+
+      document.querySelectorAll(".canal-item").forEach(function(btn) {
+        btn.classList.remove("activo");
+      });
+
+      // Marcar el usuario como activo en la lista
+      document.querySelectorAll(".usuario-item").forEach(function(item) {
+        item.classList.remove("activo");
+        if (item.getAttribute("data-username") === username) {
+          item.classList.add("activo");
+        }
+      });
+
+      document.getElementById("nombre-canal-actual").textContent = "💬 " + displayName;
+      limpiarMensajes();
+    }
+
     function enviar() {
-      const input = document.getElementById("msg");
-      const mensaje = input.value.trim();
+      var input   = document.getElementById("msg");
+      var mensaje = input.value.trim();
+
       if (mensaje === "") return;
 
-      socket.emit("send_message", { message: mensaje });
+      if (dmActual !== null) {
+        // Enviar mensaje directo
+        socket.emit("mensaje_directo", {
+          destinatario: dmActual,
+          mensaje:      mensaje
+        });
+      } else {
+        // Enviar al canal
+        socket.emit("mensaje", {
+          canal:   canalActual,
+          mensaje: mensaje
+        });
+      }
+
       input.value = "";
     }
 
-    // Escuchar mensajes del servidor
-    const chat = document.getElementById("chat");
-    socket.on("message", function(msg) {
-      const div = document.createElement("div");
-      div.textContent = msg;
-      chat.appendChild(div);
-      chat.scrollTop = chat.scrollHeight; // autoscroll
-    });
+    function mostrarMensaje(usuario, texto, esPropio) {
+      var mensajes = document.getElementById("mensajes");
 
-    function logout() {
+      var div = document.createElement("div");
+      div.className = "mensaje " + (esPropio ? "propio" : "otro");
+
+      var cabecera = document.createElement("div");
+      cabecera.className = "mensaje-usuario";
+      cabecera.textContent = usuario;
+
+      var cuerpo = document.createElement("div");
+      cuerpo.className = "mensaje-texto";
+      cuerpo.textContent = texto;
+
+      div.appendChild(cabecera);
+      div.appendChild(cuerpo);
+      mensajes.appendChild(div);
+
+      mensajes.scrollTop = mensajes.scrollHeight;
+    }
+
+    function mostrarSistema(texto) {
+      var mensajes = document.getElementById("mensajes");
+
+      var div = document.createElement("div");
+      div.className = "mensaje-sistema";
+      div.textContent = texto;
+
+      mensajes.appendChild(div);
+      mensajes.scrollTop = mensajes.scrollHeight;
+    }
+
+    function limpiarMensajes() {
+      document.getElementById("mensajes").innerHTML = "";
+    }
+
+    function cerrarSesion() {
+      fetch("/logout");
       sessionStorage.clear();
       window.location.href = "/";
     }
+
+    // Enter para enviar
+    document.getElementById("msg").addEventListener("keydown", function(e) {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        enviar();
+      }
+    });
+
   </script>
 
 </body>

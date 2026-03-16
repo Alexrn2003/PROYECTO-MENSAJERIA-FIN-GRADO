@@ -3,89 +3,489 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Login - Chat Corporativo</title>
-  <link rel="stylesheet" href="/static/style.css">
+  <title>EasyCom - Iniciar Sesión</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg-deep:     #070b14;
+      --bg-card:     rgba(13, 20, 38, 0.85);
+      --border-dim:  rgba(99, 120, 180, 0.18);
+      --border-glow: rgba(99, 180, 255, 0.35);
+      --accent-a:    #38bdf8;
+      --accent-b:    #818cf8;
+      --accent-c:    #f0abfc;
+      --text-pri:    #e8eeff;
+      --text-sec:    #7b8ab8;
+      --text-muted:  #3d4a6a;
+      --input-bg:    rgba(6, 10, 22, 0.9);
+      --green:       #22c55e;
+      --green-h:     #16a34a;
+      --red:         #f87171;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Sora', sans-serif;
+      background: var(--bg-deep);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    /* ── Canvas fondo ── */
+    #fondo-canvas {
+      position: fixed; inset: 0; z-index: 0;
+    }
+
+    /* ── Orbes de luz ambiental ── */
+    .orb {
+      position: fixed; border-radius: 50%;
+      filter: blur(90px); pointer-events: none; z-index: 0;
+    }
+    .orb-1 {
+      width: 520px; height: 520px;
+      background: radial-gradient(circle, rgba(56,189,248,0.12) 0%, transparent 70%);
+      top: -140px; left: -140px;
+    }
+    .orb-2 {
+      width: 420px; height: 420px;
+      background: radial-gradient(circle, rgba(129,140,248,0.10) 0%, transparent 70%);
+      bottom: -100px; right: -100px;
+    }
+    .orb-3 {
+      width: 300px; height: 300px;
+      background: radial-gradient(circle, rgba(240,171,252,0.07) 0%, transparent 70%);
+      top: 40%; left: 60%;
+    }
+
+    /* ── Tarjeta ── */
+    .login-card {
+      position: relative; z-index: 1;
+      background: var(--bg-card);
+      border: 1px solid var(--border-dim);
+      border-radius: 20px;
+      padding: 2.8rem 2.6rem 2.4rem;
+      width: 100%; max-width: 400px;
+      backdrop-filter: blur(24px);
+      box-shadow:
+        0 0 0 1px rgba(99,180,255,0.06),
+        0 24px 80px rgba(0,0,0,0.6),
+        0 0 60px rgba(56,189,248,0.04);
+      animation: cardIn 0.55s cubic-bezier(0.16,1,0.3,1) both;
+    }
+
+    @keyframes cardIn {
+      from { opacity:0; transform: translateY(28px) scale(0.97); }
+      to   { opacity:1; transform: translateY(0)    scale(1); }
+    }
+
+    /* ── Logo SVG inline ── */
+    .logo-wrap {
+      display: flex; justify-content: center;
+      margin-bottom: 1.6rem;
+      animation: cardIn 0.55s 0.1s cubic-bezier(0.16,1,0.3,1) both;
+    }
+
+    .logo-svg-container {
+      width: 88px; height: 88px;
+      position: relative;
+    }
+
+    /* anillo giratorio sutil */
+    .logo-svg-container::before {
+      content: '';
+      position: absolute; inset: -6px;
+      border-radius: 50%;
+      border: 1px solid transparent;
+      background: conic-gradient(from 0deg, rgba(56,189,248,0.5), rgba(129,140,248,0.4), rgba(240,171,252,0.3), rgba(56,189,248,0.5)) border-box;
+      -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: destination-out;
+      mask-composite: exclude;
+      animation: spinRing 8s linear infinite;
+    }
+
+    @keyframes spinRing {
+      to { transform: rotate(360deg); }
+    }
+
+    /* ── Título ── */
+    .login-titulo {
+      text-align: center;
+      font-size: 1.55rem; font-weight: 700;
+      letter-spacing: -0.03em;
+      background: linear-gradient(90deg, var(--accent-a), var(--accent-b), var(--accent-c));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 0.25rem;
+      animation: cardIn 0.55s 0.15s cubic-bezier(0.16,1,0.3,1) both;
+    }
+
+    .login-subtitulo {
+      text-align: center;
+      color: var(--text-sec);
+      font-size: 0.82rem; font-weight: 300;
+      letter-spacing: 0.04em;
+      margin-bottom: 2rem;
+      animation: cardIn 0.55s 0.2s cubic-bezier(0.16,1,0.3,1) both;
+    }
+
+    /* ── Divisor ── */
+    .divider-line {
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 1.6rem;
+    }
+    .divider-line span {
+      flex: 1; height: 1px;
+      background: linear-gradient(90deg, transparent, var(--border-dim), transparent);
+    }
+    .divider-line small {
+      color: var(--text-muted); font-size: 0.7rem; letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    /* ── Campos ── */
+    .campo {
+      margin-bottom: 1rem;
+      animation: cardIn 0.55s 0.25s cubic-bezier(0.16,1,0.3,1) both;
+    }
+    .campo + .campo {
+      animation-delay: 0.3s;
+    }
+
+    .campo label {
+      display: block;
+      color: var(--text-sec);
+      font-size: 0.78rem; font-weight: 500;
+      letter-spacing: 0.06em; text-transform: uppercase;
+      margin-bottom: 0.45rem;
+    }
+
+    .input-wrap {
+      position: relative;
+    }
+
+    .input-wrap svg.input-icon {
+      position: absolute; left: 13px; top: 50%; transform: translateY(-50%);
+      width: 16px; height: 16px;
+      stroke: var(--text-muted); fill: none;
+      pointer-events: none;
+      transition: stroke 0.2s;
+    }
+
+    .campo input {
+      width: 100%;
+      padding: 11px 14px 11px 40px;
+      background: var(--input-bg);
+      border: 1px solid var(--border-dim);
+      border-radius: 10px;
+      color: var(--text-pri);
+      font-size: 0.92rem; font-family: 'Sora', sans-serif;
+      transition: border-color 0.25s, box-shadow 0.25s;
+    }
+
+    .campo input::placeholder { color: var(--text-muted); }
+
+    .campo input:focus {
+      outline: none;
+      border-color: var(--accent-a);
+      box-shadow: 0 0 0 3px rgba(56,189,248,0.12), 0 0 20px rgba(56,189,248,0.06);
+    }
+
+    .campo input:focus + svg.input-icon,
+    .input-wrap:focus-within svg.input-icon {
+      stroke: var(--accent-a);
+    }
+
+    /* ── Error ── */
+    .error-msg {
+      background: rgba(248,113,113,0.08);
+      border: 1px solid rgba(248,113,113,0.3);
+      color: var(--red);
+      padding: 9px 13px;
+      border-radius: 9px;
+      font-size: 0.83rem;
+      margin-bottom: 1rem;
+      display: none;
+      animation: shake 0.35s ease;
+    }
+    .error-msg.show { display: block; }
+
+    @keyframes shake {
+      0%,100%{transform:translateX(0)}
+      20%{transform:translateX(-5px)}
+      60%{transform:translateX(5px)}
+      80%{transform:translateX(-3px)}
+    }
+
+    /* ── Botón ── */
+    .btn-login {
+      width: 100%; padding: 12px;
+      margin-top: 0.4rem;
+      background: linear-gradient(135deg, #16a34a, #22c55e);
+      color: #fff;
+      border: none; border-radius: 10px;
+      font-size: 0.93rem; font-weight: 600;
+      font-family: 'Sora', sans-serif;
+      letter-spacing: 0.02em;
+      cursor: pointer;
+      position: relative; overflow: hidden;
+      transition: transform 0.15s, box-shadow 0.25s;
+      box-shadow: 0 4px 20px rgba(34,197,94,0.25);
+      animation: cardIn 0.55s 0.35s cubic-bezier(0.16,1,0.3,1) both;
+    }
+
+    .btn-login::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,0.1), transparent);
+      opacity: 0; transition: opacity 0.2s;
+    }
+
+    .btn-login:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 30px rgba(34,197,94,0.35);
+    }
+    .btn-login:hover::before { opacity: 1; }
+    .btn-login:active { transform: scale(0.99); }
+    .btn-login:disabled {
+      background: #1a2035; color: var(--text-muted);
+      box-shadow: none; cursor: not-allowed; transform: none;
+    }
+
+    /* ── Cargando ── */
+    .cargando {
+      text-align: center; color: var(--text-sec);
+      font-size: 0.83rem; margin-top: 0.7rem; display: none;
+    }
+    .cargando.show { display: block; }
+
+    .spinner {
+      display: inline-block; width: 11px; height: 11px;
+      border: 2px solid var(--border-dim);
+      border-top-color: var(--accent-a);
+      border-radius: 50%;
+      animation: girar 0.7s linear infinite;
+      margin-right: 5px; vertical-align: middle;
+    }
+    @keyframes girar { to { transform: rotate(360deg); } }
+
+    /* ── Pie ── */
+    .login-pie {
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.74rem;
+      margin-top: 1.4rem;
+      animation: cardIn 0.55s 0.4s cubic-bezier(0.16,1,0.3,1) both;
+    }
+
+    .dominio-tag {
+      display: inline-block;
+      background: rgba(56,189,248,0.07);
+      color: var(--accent-a);
+      font-size: 0.72rem;
+      padding: 2px 10px;
+      border-radius: 20px;
+      border: 1px solid rgba(56,189,248,0.2);
+      margin-top: 5px;
+      letter-spacing: 0.04em;
+    }
+  </style>
 </head>
-<body class="login-page">
+<body>
 
-  <div class="login-container">
-    <h2>Iniciar Sesión</h2>
+  <canvas id="fondo-canvas"></canvas>
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
 
-    <div id="errorMsg" class="error-message"></div>
-    <div id="loadingMsg" class="loading">Autenticando...</div>
+  <div class="login-card">
 
-    <form id="loginForm">
-      <div class="form-group">
-        <label for="user">Usuario (dominio)</label>
-        <input type="text" id="user" placeholder="ej: administrador" required autocomplete="username" />  
+    <!-- Logo SVG inline -->
+    <div class="logo-wrap">
+      <div class="logo-svg-container">
+        <svg width="88" height="88" viewBox="0 0 88 88" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="lg1" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%"   stop-color="#38bdf8"/>
+              <stop offset="50%"  stop-color="#818cf8"/>
+              <stop offset="100%" stop-color="#f0abfc"/>
+            </linearGradient>
+            <filter id="glow">
+              <feGaussianBlur stdDeviation="3" result="b"/>
+              <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+          </defs>
+          <!-- Hexágono exterior -->
+          <polygon points="44,8 76,26 76,62 44,80 12,62 12,26"
+            fill="rgba(13,20,38,0.9)" stroke="url(#lg1)" stroke-width="1.5" opacity="0.9"/>
+          <!-- Hexágono interior -->
+          <polygon points="44,20 64,31 64,53 44,64 24,53 24,31"
+            fill="rgba(6,10,22,0.8)" stroke="url(#lg1)" stroke-width="1" opacity="0.6"/>
+          <!-- Líneas de triángulos internos -->
+          <g stroke="url(#lg1)" stroke-width="1" opacity="0.7" filter="url(#glow)">
+            <line x1="44" y1="20" x2="44" y2="64"/>
+            <line x1="24" y1="31" x2="64" y2="53"/>
+            <line x1="64" y1="31" x2="24" y2="53"/>
+          </g>
+          <!-- Hexágono central pequeño -->
+          <polygon points="44,32 52,37 52,47 44,52 36,47 36,37"
+            fill="rgba(13,20,40,0.95)" stroke="url(#lg1)" stroke-width="1" opacity="0.8"/>
+          <!-- Punto central -->
+          <circle cx="44" cy="44" r="4.5" fill="url(#lg1)" filter="url(#glow)"/>
+          <!-- Puntos en esquinas del hex exterior -->
+          <circle cx="44" cy="8"  r="2.5" fill="#38bdf8" opacity="0.9"/>
+          <circle cx="76" cy="26" r="2.5" fill="#818cf8" opacity="0.9"/>
+          <circle cx="76" cy="62" r="2.5" fill="#f0abfc" opacity="0.9"/>
+          <circle cx="44" cy="80" r="2.5" fill="#38bdf8" opacity="0.9"/>
+          <circle cx="12" cy="62" r="2.5" fill="#818cf8" opacity="0.9"/>
+          <circle cx="12" cy="26" r="2.5" fill="#f0abfc" opacity="0.9"/>
+        </svg>
       </div>
-      <div class="form-group">
+    </div>
+
+    <h1 class="login-titulo">EasyCom</h1>
+    <p class="login-subtitulo">CHAT CORPORATIVO INTERNO</p>
+
+    <div class="divider-line">
+      <span></span><small>acceso seguro</small><span></span>
+    </div>
+
+    <div id="errorMsg" class="error-msg"></div>
+
+    <form id="loginForm" autocomplete="on">
+      <div class="campo">
+        <label for="user">Usuario</label>
+        <div class="input-wrap">
+          <input type="text" id="user" placeholder="ej: juan.garcia" required autocomplete="username"/>
+          <svg class="input-icon" viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
+          </svg>
+        </div>
+      </div>
+      <div class="campo">
         <label for="pass">Contraseña</label>
-        <input type="password" id="pass" placeholder="Ingresa tu contraseña" required autocomplete="current-password" />
+        <div class="input-wrap">
+          <input type="password" id="pass" placeholder="Contraseña del dominio" required autocomplete="current-password"/>
+          <svg class="input-icon" viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="11" width="18" height="11" rx="2"/>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+          </svg>
+        </div>
       </div>
-      <button type="submit" id="loginBtn" class="login-btn">Entrar</button>
+      <button type="submit" id="loginBtn" class="btn-login">Iniciar sesión</button>
     </form>
 
-    <p style="text-align: center; margin-top: 1.5rem; font-size: 0.85rem; color: #999;">
-      Acceso restringido a personal del dominio EasyCom.local
+    <div id="loadingMsg" class="cargando">
+      <span class="spinner"></span> Verificando credenciales...
+    </div>
+
+    <p class="login-pie">
+      Acceso restringido al personal de EasyCom<br>
+      <span class="dominio-tag">easycom.local</span>
     </p>
   </div>
 
   <script>
-    document.getElementById("loginForm").addEventListener("submit", async (e) => {
-      e.preventDefault();
+    /* ── Partículas ── */
+    var canvas = document.getElementById("fondo-canvas");
+    var ctx    = canvas.getContext("2d");
+    var parts  = [];
 
-      const user = document.getElementById("user").value.trim();
-      const pass = document.getElementById("pass").value;
-      const errorMsg = document.getElementById("errorMsg");
-      const loadingMsg = document.getElementById("loadingMsg");
-      const loginBtn = document.getElementById("loginBtn");
+    function resize() { canvas.width = innerWidth; canvas.height = innerHeight; }
+    resize();
+    window.addEventListener("resize", resize);
 
-      if (!user || !pass) {
-        errorMsg.textContent = "Por favor completa todos los campos";
-        errorMsg.classList.add("show");
-        return;
+    for (var i = 0; i < 90; i++) {
+      parts.push({
+        x:  Math.random() * innerWidth,
+        y:  Math.random() * innerHeight,
+        r:  Math.random() * 1.6 + 0.4,
+        dx: (Math.random() - 0.5) * 0.35,
+        dy: (Math.random() - 0.5) * 0.35,
+        a:  Math.random() * 0.4 + 0.08,
+        hue: Math.random() < 0.5
+              ? [56,189,248]
+              : Math.random() < 0.5
+                ? [129,140,248]
+                : [240,171,252]
+      });
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      parts.forEach(p => {
+        p.x += p.dx; p.y += p.dy;
+        if (p.x < 0 || p.x > canvas.width)  p.dx *= -1;
+        if (p.y < 0 || p.y > canvas.height) p.dy *= -1;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI*2);
+        ctx.fillStyle = `rgba(${p.hue[0]},${p.hue[1]},${p.hue[2]},${p.a})`;
+        ctx.fill();
+      });
+      for (var i = 0; i < parts.length; i++) {
+        for (var j = i+1; j < parts.length; j++) {
+          var d = Math.hypot(parts[i].x-parts[j].x, parts[i].y-parts[j].y);
+          if (d < 110) {
+            ctx.beginPath();
+            ctx.moveTo(parts[i].x, parts[i].y);
+            ctx.lineTo(parts[j].x, parts[j].y);
+            ctx.strokeStyle = `rgba(99,160,248,${(1-d/110)*0.12})`;
+            ctx.lineWidth = 0.5;
+            ctx.stroke();
+          }
+        }
       }
+      requestAnimationFrame(draw);
+    }
+    draw();
 
-      errorMsg.classList.remove("show");
-      loadingMsg.classList.add("show");
-      loginBtn.disabled = true;
+    /* ── Login ── */
+    document.getElementById("loginForm").addEventListener("submit", async function(e) {
+      e.preventDefault();
+      var user = document.getElementById("user").value.trim();
+      var pass = document.getElementById("pass").value;
+      var err  = document.getElementById("errorMsg");
+      var load = document.getElementById("loadingMsg");
+      var btn  = document.getElementById("loginBtn");
+
+      err.classList.remove("show");
+      if (!user || !pass) {
+        err.textContent = "Por favor rellena todos los campos";
+        err.classList.add("show"); return;
+      }
+      load.classList.add("show"); btn.disabled = true;
 
       try {
-        const protocol = window.location.protocol;
-        const host = window.location.host;
-        const url = `${protocol}//${host}/login`;
-
-        const response = await fetch(url, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({ user, password: pass })
+        var r = await fetch("/login", {
+          method:"POST",
+          headers:{"Content-Type":"application/json"},
+          body: JSON.stringify({user, password: pass})
         });
-
-        const data = await response.json();
-        
-        if (data.success) {
-          sessionStorage.setItem("username", data.username);
-          sessionStorage.setItem("display_name", data.display_name || data.username);
-          sessionStorage.setItem("role", data.role);
-          
+        var d = await r.json();
+        if (d.success) {
+          sessionStorage.setItem("username",     user);
+          sessionStorage.setItem("display_name", d.display_name || user);
+          sessionStorage.setItem("departamento", d.departamento || "");
+          sessionStorage.setItem("es_directivo", d.es_directivo ? "true" : "false");
           window.location.href = "/chat";
         } else {
-          errorMsg.textContent = data.error || "Usuario o contraseña incorrectos";
-          errorMsg.classList.add("show");
+          err.textContent = d.error || "Usuario o contraseña incorrectos";
+          err.classList.add("show");
         }
-      } catch (error) {
-        console.error("Error de conexión:", error);
-        errorMsg.textContent = "No se pudo conectar con el servidor. Verifica la conexión.";
-        errorMsg.classList.add("show");
+      } catch(e) {
+        err.textContent = "Error de conexión con el servidor";
+        err.classList.add("show");
       } finally {
-        loadingMsg.classList.remove("show");
-        loginBtn.disabled = false;
+        load.classList.remove("show"); btn.disabled = false;
       }
     });
   </script>
-
 </body>
 </html>
