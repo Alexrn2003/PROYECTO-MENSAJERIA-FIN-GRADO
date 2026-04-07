@@ -1,4 +1,5 @@
-#!/usr/bin/env python3
+# Script alternativo para ejecutar el servidor con acceso desde red
+# Requiere ejecutar como administrador
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -13,7 +14,8 @@ PORT = int(os.getenv("PORT", 5000))
 
 if __name__ == "__main__":
     print("========================================")
-    print("   SERVIDOR EASYCOM INICIANDO")
+    print("   SERVIDOR EASYCOM (MODO RED)")
+    print("   ⚠️  REQUIERE ADMINISTRADOR")
     print("========================================")
 
     # Configuración HTTPS
@@ -26,7 +28,6 @@ if __name__ == "__main__":
 
         if not os.path.exists(cert_file) or not os.path.exists(key_file):
             print(f"❌ Error: No se encontraron los certificados SSL/TLS")
-            print(f"   Genéralos con: python generate_ssl_cert.py")
             sys.exit(1)
 
         ssl_context = (cert_file, key_file)
@@ -34,7 +35,7 @@ if __name__ == "__main__":
 
     print(f"Protocolo: {protocol}")
     print(f"Puerto: {PORT}")
-    print(f"Host: 127.0.0.1 (localhost)")
+    print(f"Host: 0.0.0.0 (acceso desde red)")
     print(f"Acceso local: http://localhost:{PORT}")
     print(f"Acceso red: http://192.168.1.1:{PORT} o http://10.0.2.15:{PORT}")
     print("========================================\n")
@@ -42,28 +43,15 @@ if __name__ == "__main__":
     try:
         socketio.run(
             app,
-            host="127.0.0.1",  # Cambiado de 0.0.0.0 a 127.0.0.1 para evitar problemas de permisos
+            host="0.0.0.0",  # Acceso desde todas las interfaces
             port=PORT,
             debug=False,
             ssl_context=ssl_context
         )
     except PermissionError as e:
         print(f"❌ ERROR DE PERMISOS: {e}")
-        print("💡 SOLUCIONES:")
-        print("   1. Ejecuta como administrador:")
-        print("      - Clic derecho en PowerShell → 'Ejecutar como administrador'")
-        print("   2. O cambia el puerto en .env:")
-        print("      PORT=8080")
-        print("   3. O usa host='0.0.0.0' si necesitas acceso desde otras máquinas")
+        print("💡 SOLUCIÓN: Ejecuta este script como administrador")
         sys.exit(1)
     except OSError as e:
-        if "WinError 10013" in str(e) or "permisos de acceso" in str(e).lower():
-            print(f"❌ ERROR DE SOCKET: {e}")
-            print("💡 SOLUCIONES:")
-            print("   1. Ejecuta como administrador")
-            print("   2. Cambia el puerto: PORT=8080 en .env")
-            print("   3. Verifica que no haya otro programa usando el puerto")
-            sys.exit(1)
-        else:
-            print(f"❌ ERROR DESCONOCIDO: {e}")
-            sys.exit(1)
+        print(f"❌ ERROR DE SOCKET: {e}")
+        sys.exit(1)

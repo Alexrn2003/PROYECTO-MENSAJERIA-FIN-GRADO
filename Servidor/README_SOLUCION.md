@@ -6,10 +6,33 @@
 ```powershell
 cd C:\EasyCom-Mensajería\Servidor
 pip install -r requisitos.txt
-python run_server.py
 ```
 
-El servidor se iniciará en `http://localhost:5000`
+### Ejecutar Servidor
+
+**Opción 1: Solo localhost (recomendado)**
+```powershell
+python run_server.py
+```
+- ✅ No requiere permisos especiales
+- ✅ Acceso desde: `http://localhost:5000`
+- ❌ No accesible desde otras máquinas
+
+**Opción 2: Acceso desde red (requiere administrador)**
+```powershell
+# Clic derecho en PowerShell → "Ejecutar como administrador"
+python run_server_network.py
+```
+- ✅ Accesible desde otras máquinas en la red
+- ✅ Acceso desde móviles en misma WiFi
+- ❌ Requiere permisos de administrador
+
+### Solución de Problemas
+
+Si ves el error "Intento de acceso a un socket no permitido":
+1. **Usa `run_server.py`** (solo localhost) - no requiere admin
+2. **O ejecuta como administrador** y usa `run_server_network.py`
+3. **O cambia el puerto** en `.env`: `PORT=8080`
 
 ---
 
@@ -68,14 +91,15 @@ Este te guiará para configurar port forwarding en tu router.
 ```
 Servidor/
 ├── server.py              # Servidor Flask + Socket.IO
-├── run_server.py          # Script de inicio
+├── run_server.py          # Script de inicio (localhost)
+├── run_server_network.py  # Script de inicio (red - requiere admin)
 ├── .env                   # Variables de configuración
 ├── requisitos.txt         # Dependencias Python
 ├── config_port_forwarding.ps1  # Guía de conexión móvil
 ├── server.log            # Log de eventos
 ├── server.err            # Log de errores
 ├── Cliente/              # Cliente Python
-├── Static/               # chat.js
+├── Static/               # chat.js, style.css
 └── templates/            # login.html, chat.html
 ```
 

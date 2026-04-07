@@ -6,10 +6,76 @@
   <title>EasyCom - Chat Corporativo</title>
   <link rel="stylesheet" href="/static/style.css">
   <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+  <style>
+    .escribiendo-bar {
+      display: none;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 20px;
+      font-size: 0.8rem;
+      color: #888;
+      font-style: italic;
+      background: white;
+      border-top: 1px solid #f0f0f0;
+      min-height: 24px;
+    }
+    .escribiendo-puntos span {
+      animation: punto 1.2s infinite;
+      opacity: 0;
+    }
+    .escribiendo-puntos span:nth-child(1) { animation-delay: 0s; }
+    .escribiendo-puntos span:nth-child(2) { animation-delay: 0.3s; }
+    .escribiendo-puntos span:nth-child(3) { animation-delay: 0.6s; }
+    @keyframes punto {
+      0%, 60%, 100% { opacity: 0; }
+      30%            { opacity: 1; }
+    }
+    .badge-notif {
+      background: #e53935;
+      color: white;
+      font-size: 0.68rem;
+      font-weight: 700;
+      padding: 1px 6px;
+      border-radius: 10px;
+      min-width: 18px;
+      text-align: center;
+      margin-left: auto;
+      display: none;
+    }
+    .canal-item   { display: flex; align-items: center; justify-content: space-between; }
+    .usuario-item { position: relative; }
+    .toast-notif {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: #2c2f3a;
+      color: #eee;
+      border-radius: 12px;
+      padding: 12px 16px;
+      display: none;
+      align-items: flex-start;
+      gap: 10px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+      max-width: 300px;
+      z-index: 9999;
+      border-left: 4px solid #667eea;
+      animation: toast-in 0.3s ease;
+    }
+    @keyframes toast-in {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .toast-titulo { font-weight: 700; font-size: 0.87rem; color: #fff; margin-bottom: 2px; }
+    .toast-msg    { font-size: 0.8rem; color: #aaa; }
+    .toast-cerrar {
+      background: none; border: none; color: #666; cursor: pointer;
+      font-size: 0.85rem; padding: 0; line-height: 1; margin-left: auto; flex-shrink: 0;
+    }
+    .toast-cerrar:hover { color: #ccc; }
+  </style>
 </head>
 <body class="chat-page">
 
-  <!-- Cabecera superior -->
   <div class="chat-header">
     <div class="header-izquierda">
       <img src="/static/logotipo.png" class="logo" width="42" height="42">
@@ -22,133 +88,119 @@
     </div>
   </div>
 
-  <!-- Contenido: sidebar + área de chat -->
   <div class="pagina-chat">
 
-    <!-- Barra lateral -->
     <div class="sidebar">
-
       <div class="sidebar-seccion">
         <p class="sidebar-titulo">CANALES</p>
-
         <div class="canal-item activo" id="btn-global" onclick="irACanal('global', '🌐 Global')">
-          # Global
+          <span># Global</span>
+          <span class="badge-notif" id="badge-global"></span>
         </div>
-
         <div class="canal-item" id="btn-depart" onclick="irACanal(miCanalDepart, '🏢 ' + miDepartamento)" style="display:none">
-          # <span id="nombre-depart-btn">Mi departamento</span>
+          <span># <span id="nombre-depart-btn">Mi departamento</span></span>
+          <span class="badge-notif" id="badge-depart"></span>
         </div>
-
         <div class="canal-item" id="btn-directivos" onclick="irACanal('directivos', '👔 Directivos')" style="display:none">
-          # Directivos
+          <span># Directivos</span>
+          <span class="badge-notif" id="badge-directivos"></span>
         </div>
       </div>
-
       <div class="sidebar-seccion" style="margin-top: 20px;">
         <p class="sidebar-titulo">MENSAJES DIRECTOS</p>
         <div id="lista-usuarios">
           <p class="sidebar-vacio">No hay más usuarios conectados</p>
         </div>
       </div>
-
     </div>
 
-    <!-- Área del chat -->
     <div class="area-chat">
-
       <div class="chat-cabecera-canal">
         <span id="nombre-canal-actual">🌐 Global</span>
       </div>
-
       <div class="chat-mensajes" id="mensajes">
         <p class="bienvenida">Bienvenido al chat. Escribe un mensaje para empezar.</p>
       </div>
-
+      <div class="escribiendo-bar" id="escribiendo-bar">
+        <span id="escribiendo-texto"></span>
+        <span class="escribiendo-puntos"><span>.</span><span>.</span><span>.</span></span>
+      </div>
       <div class="chat-input">
         <input type="text" id="msg" placeholder="Escribe un mensaje..." autocomplete="off" />
         <button onclick="enviar()" class="send-btn">Enviar</button>
       </div>
-
     </div>
 
   </div>
 
+  <div id="toast-notif" class="toast-notif">
+    <div>
+      <div class="toast-titulo" id="toast-titulo"></div>
+      <div class="toast-msg" id="toast-msg"></div>
+    </div>
+    <button class="toast-cerrar" onclick="cerrarToast()">✕</button>
+  </div>
+
   <script>
-    // ---- Info del usuario (viene del sessionStorage al hacer login) ----
-    var miNombre      = sessionStorage.getItem("display_name") || "Usuario";
-    var miUsername    = sessionStorage.getItem("username") || "";
+    var miNombre       = sessionStorage.getItem("display_name") || "Usuario";
+    var miUsername     = sessionStorage.getItem("username") || "";
     var miDepartamento = sessionStorage.getItem("departamento") || "";
-    var esDirectivo   = sessionStorage.getItem("es_directivo") === "true";
+    var esDirectivo    = sessionStorage.getItem("es_directivo") === "true";
+    var miCanalDepart  = miDepartamento ? miDepartamento.toLowerCase() : "";
 
-    // Canal del departamento (en minúsculas para que coincida con el del servidor)
-    var miCanalDepart = miDepartamento ? miDepartamento.toLowerCase() : "";
+    var canalActual = "global";
+    var dmActual    = null;
+    var noLeidos    = {};
+    var tituloOriginal   = document.title;
+    var tituloParpadeInt = null;
+    var escribiendoActivos  = {};
+    var escribiendoTimeouts = {};
+    var emitEscribiendoTO   = null;
 
-    // ---- Estado del chat ----
-    var canalActual   = "global";   // Canal de sala en el que estoy
-    var dmActual      = null;       // null = canal, string = username del DM
-
-    // ---- Mostrar info en cabecera ----
     document.getElementById("nombre-usuario").textContent = miNombre;
-
+    if (miDepartamento) document.getElementById("depart-usuario").textContent = miDepartamento;
     if (miDepartamento) {
-      document.getElementById("depart-usuario").textContent = miDepartamento;
-    }
-
-    // ---- Mostrar botones según permisos ----
-    if (miDepartamento && miDepartamento !== "") {
-      document.getElementById("btn-depart").style.display = "block";
+      document.getElementById("btn-depart").style.display = "flex";
       document.getElementById("nombre-depart-btn").textContent = miDepartamento;
     }
+    if (esDirectivo) document.getElementById("btn-directivos").style.display = "flex";
 
-    if (esDirectivo) {
-      document.getElementById("btn-directivos").style.display = "block";
-    }
-
-    // ---- Conectar con el servidor ----
     var socket = io();
 
-    // Mensaje de canal recibido
     socket.on("nuevo_mensaje", function(data) {
-      // Solo mostrarlo si estamos en ese canal y no en un DM
+      var hora = data.fecha || horaActual();
       if (dmActual === null && data.canal === canalActual) {
-        mostrarMensaje(data.usuario, data.mensaje, data.usuario === miNombre);
+        mostrarMensaje(data.usuario, data.mensaje, data.usuario === miNombre, hora);
+      } else if (data.usuario !== miNombre) {
+        sumarNoLeidos(data.canal);
+        mostrarToast(data.usuario, data.mensaje);
+        parpadearTitulo(data.usuario);
       }
     });
 
-    // Mensaje del sistema (conexiones, desconexiones...)
     socket.on("sistema", function(texto) {
-      if (dmActual === null && canalActual === "global") {
-        mostrarSistema(texto);
-      }
+      if (dmActual === null && canalActual === "global") mostrarSistema(texto);
     });
 
-    // Mensaje directo recibido
     socket.on("nuevo_dm", function(data) {
-      var esDeMiDM = false;
-
-      if (data.es_propio && dmActual === data.para) {
-        esDeMiDM = true;
-      } else if (!data.es_propio && dmActual === data.de_user) {
-        esDeMiDM = true;
-      }
-
-      if (esDeMiDM) {
-        if (data.es_propio) {
-          mostrarMensaje("Tú", data.mensaje, true);
+      var hora = data.fecha || horaActual();
+      if (data.es_propio) {
+        if (dmActual === data.para) mostrarMensaje("Tú", data.mensaje, true, hora);
+      } else {
+        if (dmActual === data.de_user) {
+          mostrarMensaje(data.de, data.mensaje, false, hora);
         } else {
-          mostrarMensaje(data.de, data.mensaje, false);
+          sumarNoLeidos("dm:" + data.de_user);
+          mostrarToast(data.de, data.mensaje);
+          parpadearTitulo(data.de);
         }
       }
     });
 
-    // Lista de usuarios actualizada
     socket.on("lista_usuarios", function(usuarios) {
       var lista = document.getElementById("lista-usuarios");
       lista.innerHTML = "";
-
-      var otros = usuarios.filter(function(u) {
-        return u.username !== miUsername;
-      });
+      var otros = usuarios.filter(function(u) { return u.username !== miUsername; });
 
       if (otros.length === 0) {
         lista.innerHTML = '<p class="sidebar-vacio">No hay más usuarios conectados</p>';
@@ -167,139 +219,220 @@
         var nombre = document.createElement("span");
         nombre.textContent = u.display_name;
 
+        div.appendChild(punto);
+        div.appendChild(nombre);
+
         if (u.departamento) {
           var depart = document.createElement("span");
           depart.className = "usuario-depart";
           depart.textContent = " · " + u.departamento;
-          div.appendChild(punto);
-          div.appendChild(nombre);
           div.appendChild(depart);
-        } else {
-          div.appendChild(punto);
-          div.appendChild(nombre);
         }
 
-        div.onclick = function() {
-          abrirDM(u.username, u.display_name);
-        };
+        var badge = document.createElement("span");
+        badge.className = "badge-notif";
+        badge.id = "badge-dm-" + u.username;
+        var count = noLeidos["dm:" + u.username] || 0;
+        if (count > 0) { badge.textContent = count > 9 ? "9+" : count; badge.style.display = "inline-block"; }
+        div.appendChild(badge);
 
+        div.onclick = function() { abrirDM(u.username, u.display_name); };
         lista.appendChild(div);
       });
     });
 
-    // ---- Funciones principales ----
+    socket.on("escribiendo", function(data) {
+      var esVista = data.tipo === "dm"
+        ? dmActual === data.de_user
+        : (dmActual === null && canalActual === data.canal);
+      if (!esVista) return;
+
+      var clave = data.tipo === "dm" ? "dm:" + data.de_user : "canal:" + data.canal + ":" + data.de_user;
+      escribiendoActivos[data.de_user] = data.de;
+      if (escribiendoTimeouts[clave]) clearTimeout(escribiendoTimeouts[clave]);
+      escribiendoTimeouts[clave] = setTimeout(function() {
+        delete escribiendoActivos[data.de_user];
+        actualizarEscribiendo();
+      }, 3000);
+      actualizarEscribiendo();
+    });
 
     function irACanal(canal, nombreVisible) {
-      dmActual    = null;
-      canalActual = canal;
-
-      // Quitar el activo de todos los botones
-      document.querySelectorAll(".canal-item").forEach(function(btn) {
-        btn.classList.remove("activo");
-      });
-
-      // Poner activo al botón correcto
-      if (canal === "global")       document.getElementById("btn-global").classList.add("activo");
-      if (canal === miCanalDepart)  document.getElementById("btn-depart").classList.add("activo");
-      if (canal === "directivos")   document.getElementById("btn-directivos").classList.add("activo");
-
+      dmActual = null; canalActual = canal;
+      document.querySelectorAll(".canal-item").forEach(function(b) { b.classList.remove("activo"); });
+      document.querySelectorAll(".usuario-item").forEach(function(b) { b.classList.remove("activo"); });
+      if (canal === "global")      document.getElementById("btn-global").classList.add("activo");
+      if (canal === miCanalDepart) document.getElementById("btn-depart").classList.add("activo");
+      if (canal === "directivos")  document.getElementById("btn-directivos").classList.add("activo");
       document.getElementById("nombre-canal-actual").textContent = nombreVisible;
-      limpiarMensajes();
+      limpiarMensajes(); limpiarEscribiendo(); borrarNoLeidos(canal);
+      fetch("/historial/" + canal).then(function(r) { return r.json(); }).then(function(msgs) {
+        if (msgs.length === 0) {
+          document.getElementById("mensajes").innerHTML = '<p class="bienvenida">Bienvenido al chat. Escribe un mensaje para empezar.</p>';
+          return;
+        }
+        msgs.forEach(function(m) { mostrarMensaje(m.usuario, m.mensaje, m.usuario === miNombre, m.fecha); });
+      });
     }
 
     function abrirDM(username, displayName) {
       dmActual = username;
-
-      document.querySelectorAll(".canal-item").forEach(function(btn) {
-        btn.classList.remove("activo");
+      document.querySelectorAll(".canal-item").forEach(function(b) { b.classList.remove("activo"); });
+      document.querySelectorAll(".usuario-item").forEach(function(b) {
+        b.classList.remove("activo");
+        if (b.getAttribute("data-username") === username) b.classList.add("activo");
       });
-
-      // Marcar el usuario como activo en la lista
-      document.querySelectorAll(".usuario-item").forEach(function(item) {
-        item.classList.remove("activo");
-        if (item.getAttribute("data-username") === username) {
-          item.classList.add("activo");
-        }
-      });
-
       document.getElementById("nombre-canal-actual").textContent = "💬 " + displayName;
-      limpiarMensajes();
+      limpiarMensajes(); limpiarEscribiendo(); borrarNoLeidos("dm:" + username);
+
+      // Cargar historial del DM
+      fetch("/historial_dm/" + username)
+        .then(function(r) { return r.json(); })
+        .then(function(msgs) {
+          if (msgs.length === 0) {
+            document.getElementById("mensajes").innerHTML =
+              '<p class="bienvenida">Inicio de tu conversación con ' + displayName + '.</p>';
+            return;
+          }
+          msgs.forEach(function(m) {
+            var esPropio = m.usuario === miNombre;
+            mostrarMensaje(esPropio ? "Tú" : m.usuario, m.mensaje, esPropio, m.fecha);
+          });
+        });
     }
 
     function enviar() {
-      var input   = document.getElementById("msg");
+      var input = document.getElementById("msg");
       var mensaje = input.value.trim();
-
-      if (mensaje === "") return;
-
+      if (!mensaje) return;
       if (dmActual !== null) {
-        // Enviar mensaje directo
-        socket.emit("mensaje_directo", {
-          destinatario: dmActual,
-          mensaje:      mensaje
-        });
+        socket.emit("mensaje_directo", { destinatario: dmActual, mensaje: mensaje });
       } else {
-        // Enviar al canal
-        socket.emit("mensaje", {
-          canal:   canalActual,
-          mensaje: mensaje
-        });
+        socket.emit("mensaje", { canal: canalActual, mensaje: mensaje });
       }
-
       input.value = "";
     }
 
-    function mostrarMensaje(usuario, texto, esPropio) {
+    function mostrarMensaje(usuario, texto, esPropio, hora) {
       var mensajes = document.getElementById("mensajes");
-
+      var bienvenida = mensajes.querySelector(".bienvenida");
+      if (bienvenida) bienvenida.remove();
       var div = document.createElement("div");
       div.className = "mensaje " + (esPropio ? "propio" : "otro");
-
       var cabecera = document.createElement("div");
       cabecera.className = "mensaje-usuario";
-      cabecera.textContent = usuario;
-
+      cabecera.textContent = usuario + (hora ? "  " + hora : "");
       var cuerpo = document.createElement("div");
       cuerpo.className = "mensaje-texto";
       cuerpo.textContent = texto;
-
-      div.appendChild(cabecera);
-      div.appendChild(cuerpo);
+      div.appendChild(cabecera); div.appendChild(cuerpo);
       mensajes.appendChild(div);
-
       mensajes.scrollTop = mensajes.scrollHeight;
     }
 
     function mostrarSistema(texto) {
       var mensajes = document.getElementById("mensajes");
-
       var div = document.createElement("div");
       div.className = "mensaje-sistema";
       div.textContent = texto;
-
       mensajes.appendChild(div);
       mensajes.scrollTop = mensajes.scrollHeight;
     }
 
-    function limpiarMensajes() {
-      document.getElementById("mensajes").innerHTML = "";
+    function limpiarMensajes() { document.getElementById("mensajes").innerHTML = ""; }
+
+    function actualizarEscribiendo() {
+      var bar    = document.getElementById("escribiendo-bar");
+      var texto  = document.getElementById("escribiendo-texto");
+      var nombres = Object.values(escribiendoActivos);
+      if (nombres.length === 0) { bar.style.display = "none"; return; }
+      texto.textContent = nombres.length === 1 ? nombres[0] + " está escribiendo" : nombres.join(", ") + " están escribiendo";
+      bar.style.display = "flex";
     }
 
-    function cerrarSesion() {
+    function limpiarEscribiendo() { escribiendoActivos = {}; actualizarEscribiendo(); }
+
+    document.getElementById("msg").addEventListener("input", function() {
+      if (emitEscribiendoTO) clearTimeout(emitEscribiendoTO);
+      if (dmActual !== null) {
+        socket.emit("escribiendo", { tipo: "dm", destinatario: dmActual });
+      } else {
+        socket.emit("escribiendo", { tipo: "canal", canal: canalActual });
+      }
+      emitEscribiendoTO = setTimeout(function() {}, 2000);
+    });
+
+    function sumarNoLeidos(clave) {
+      noLeidos[clave] = (noLeidos[clave] || 0) + 1;
+      var n = noLeidos[clave]; var texto = n > 9 ? "9+" : String(n);
+      if (clave.startsWith("dm:")) {
+        var b = document.getElementById("badge-dm-" + clave.replace("dm:", ""));
+        if (b) { b.textContent = texto; b.style.display = "inline-block"; }
+      } else {
+        var id = clave === "global" ? "badge-global" : clave === "directivos" ? "badge-directivos" : "badge-depart";
+        var b = document.getElementById(id);
+        if (b) { b.textContent = texto; b.style.display = "inline-block"; }
+      }
+    }
+
+    function borrarNoLeidos(clave) {
+      noLeidos[clave] = 0;
+      if (clave.startsWith("dm:")) {
+        var b = document.getElementById("badge-dm-" + clave.replace("dm:", ""));
+        if (b) b.style.display = "none";
+      } else {
+        var id = clave === "global" ? "badge-global" : clave === "directivos" ? "badge-directivos" : "badge-depart";
+        var b = document.getElementById(id);
+        if (b) b.style.display = "none";
+      }
+      var total = Object.values(noLeidos).reduce(function(a, b) { return a + b; }, 0);
+      if (total === 0) detenerParpadeo();
+    }
+
+    var toastTO = null;
+    function mostrarToast(remitente, texto) {
+      document.getElementById("toast-titulo").textContent = remitente;
+      document.getElementById("toast-msg").textContent = texto.length > 60 ? texto.substring(0, 60) + "…" : texto;
+      var t = document.getElementById("toast-notif"); t.style.display = "flex";
+      if (toastTO) clearTimeout(toastTO);
+      toastTO = setTimeout(cerrarToast, 5000);
+    }
+    function cerrarToast() { document.getElementById("toast-notif").style.display = "none"; }
+
+    function parpadearTitulo(remitente) {
+      if (document.hasFocus() || tituloParpadeInt) return;
+      var alterno = true;
+      tituloParpadeInt = setInterval(function() {
+        document.title = alterno ? "🔔 " + remitente : tituloOriginal;
+        alterno = !alterno;
+      }, 1200);
+    }
+    function detenerParpadeo() {
+      if (tituloParpadeInt) { clearInterval(tituloParpadeInt); tituloParpadeInt = null; }
+      document.title = tituloOriginal;
+    }
+    window.addEventListener("focus", detenerParpadeo);
+
+    // Expulsión por administrador
+    socket.on("forzar_desconexion", function(data) {
+      alert(data.motivo || "Has sido desconectado por un administrador.");
       fetch("/logout");
       sessionStorage.clear();
       window.location.href = "/";
-    }
-
-    // Enter para enviar
-    document.getElementById("msg").addEventListener("keydown", function(e) {
-      if (e.key === "Enter") {
-        e.preventDefault();
-        enviar();
-      }
     });
 
-  </script>
+    function horaActual() {
+      var now = new Date();
+      return now.getHours().toString().padStart(2, "0") + ":" + now.getMinutes().toString().padStart(2, "0");
+    }
 
+    function cerrarSesion() {
+      fetch("/logout"); sessionStorage.clear(); window.location.href = "/";
+    }
+
+    document.getElementById("msg").addEventListener("keydown", function(e) {
+      if (e.key === "Enter") { e.preventDefault(); enviar(); }
+    });
+  </script>
 </body>
 </html>
