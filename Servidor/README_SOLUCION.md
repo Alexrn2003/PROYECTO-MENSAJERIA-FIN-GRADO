@@ -15,7 +15,7 @@ pip install -r requisitos.txt
 python run_server.py
 ```
 - ✅ No requiere permisos especiales
-- ✅ Acceso desde: `http://localhost:5000`
+- ✅ Acceso desde: `http://localhost:8080`
 - ❌ No accesible desde otras máquinas
 
 **Opción 2: Acceso desde red (requiere administrador)**
@@ -52,7 +52,7 @@ Si ves el error "Intento de acceso a un socket no permitido":
 
 **URL Local:**
 ```
-http://localhost:5000
+http://localhost:8080
 ```
 
 ---
@@ -63,12 +63,12 @@ Abre en el navegador de tu móvil:
 
 **Opción 1:**
 ```
-http://192.168.1.1:5000
+http://192.168.1.1:8080
 ```
 
 **Opción 2:**
 ```
-http://10.0.2.15:5000
+http://10.0.2.15:8080
 ```
 
 ---
