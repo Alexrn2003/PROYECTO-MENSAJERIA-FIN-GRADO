@@ -1,15 +1,11 @@
 const socket = io();
 
-// Obtener datos del usuario del sessionStorage
-const username = sessionStorage.getItem("username");
-const display_name = sessionStorage.getItem("display_name") || username || "Usuario";
-const role = sessionStorage.getItem("role") || "user";
+let username = null;
+let display_name = null;
+let role = null;
 
-// Conectar usuario
-socket.emit("connect_user", { 
-  username: username,
-  display_name: display_name,
-  role: role 
+socket.on("connect", () => {
+  console.log("Conectado al servidor de chat");
 });
 
 socket.on("message", (msg) => {
@@ -21,16 +17,17 @@ socket.on("message", (msg) => {
     emptyState.remove();
   }
   
-  // Parsear el mensaje si viene en formato JSON
-  let messageObj = typeof msg === 'string' ? JSON.parse(msg) : msg;
-  
+  // El mensaje viene como objeto JSON desde el servidor
   const messageDiv = document.createElement("div");
-  messageDiv.className = `message ${messageObj.username === username ? 'own' : 'other'}`;
+  const isOwn = msg.username === username;
+  messageDiv.className = `message ${isOwn ? 'own' : 'other'}`;
+  
+  const time = new Date().toLocaleTimeString('es-ES', {hour: '2-digit', minute:'2-digit'});
   
   messageDiv.innerHTML = `
-    <div class="message-user">${messageObj.display_name || messageObj.username}</div>
-    <div class="message-text">${escapeHtml(messageObj.text || messageObj.message)}</div>
-    <div class="message-timestamp">${new Date().toLocaleTimeString('es-ES', {hour: '2-digit', minute:'2-digit'})}</div>
+    <div class="message-user">${escapeHtml(msg.display_name)}</div>
+    <div class="message-text">${escapeHtml(msg.text)}</div>
+    <div class="message-timestamp">${time}</div>
   `;
   
   chat.appendChild(messageDiv);
@@ -53,25 +50,46 @@ function escapeHtml(text) {
   return div.innerHTML;
 }
 
-// Verificar sesión y configurar UI
-window.addEventListener('load', () => {
-  if (!username) {
-    alert("No hay sesión activa. Redirigiendo al login...");
+function logout() {
+  // Hacer logout en el servidor
+  fetch("/logout", { method: "POST" }).then(() => {
     window.location.href = "/";
-  } else {
-    // Mostrar información del usuario
-    document.getElementById("userDisplay").textContent = `${display_name} (${role})`;
-    
-    // Permitir enviar con Enter
-    const input = document.getElementById("msg");
-    if (input) {
-      input.addEventListener("keydown", function(e) {
-        if (e.key === "Enter") {
-          e.preventDefault();
-          enviar();
-        }
-      });
-      input.focus();
-    }
-  }
+  });
+}
+
+// Cargar información del usuario desde el servidor
+window.addEventListener('load', () => {
+  // Obtener información del usuario actual
+  fetch("/get_user_info")
+    .then(response => response.json())
+    .then(data => {
+      if (!data.username) {
+        // Sin sesión, redirigir a login
+        window.location.href = "/";
+        return;
+      }
+      
+      username = data.username;
+      display_name = data.display_name;
+      role = data.role;
+      
+      // Mostrar información del usuario
+      document.getElementById("userDisplay").textContent = `${display_name} (${role})`;
+      
+      // Permitir enviar con Enter
+      const input = document.getElementById("msg");
+      if (input) {
+        input.addEventListener("keydown", function(e) {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            enviar();
+          }
+        });
+        input.focus();
+      }
+    })
+    .catch(error => {
+      console.error("Error obteniendo información del usuario:", error);
+      window.location.href = "/";
+    });
 });

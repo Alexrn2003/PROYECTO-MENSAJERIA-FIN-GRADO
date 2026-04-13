@@ -6,6 +6,7 @@ from ldap3.utils.conv import escape_filter_chars
 from dotenv import load_dotenv
 import os
 
+
 # Cargar variables de entorno
 load_dotenv()
 
@@ -138,6 +139,24 @@ def chat():
     return render_template("chat.html")
 
 
+@app.route("/get_user_info")
+def get_user_info():
+    if "username" not in session:
+        return jsonify({"username": None})
+    
+    return jsonify({
+        "username": session.get("username"),
+        "display_name": session.get("display_name"),
+        "role": session.get("role")
+    })
+
+
+@app.route("/logout", methods=["POST"])
+def logout():
+    session.clear()
+    return jsonify({"success": True})
+
+
 @app.route("/login", methods=["POST"])
 def login():
     data = request.json
@@ -175,9 +194,15 @@ def conectar():
         "role": session["role"]
     }
 
+    print(f"✓ {session['display_name']} conectado")
+
     emit(
         "message",
-        f"{session['display_name']} se ha unido al chat",
+        {
+            "username": "SISTEMA",
+            "display_name": "SISTEMA",
+            "text": f"{session['display_name']} se ha unido al chat"
+        },
         broadcast=True
     )
 
@@ -191,9 +216,14 @@ def recibir_mensaje(data):
     mensaje = data.get("message", "").strip()
 
     if mensaje:
+        mensaje_dict = {
+            "username": user_info["username"],
+            "display_name": user_info["display_name"],
+            "text": mensaje
+        }
         emit(
             "message",
-            f"{user_info['display_name']}: {mensaje}",
+            mensaje_dict,
             broadcast=True
         )
 
@@ -203,9 +233,14 @@ def desconexion():
     user_info = usuarios_conectados.pop(request.sid, None)
 
     if user_info:
+        print(f"✗ {user_info['display_name']} desconectado")
         emit(
             "message",
-            f"{user_info['display_name']} salió del chat",
+            {
+                "username": "SISTEMA",
+                "display_name": "SISTEMA",
+                "text": f"{user_info['display_name']} salió del chat"
+            },
             broadcast=True
         )
 
