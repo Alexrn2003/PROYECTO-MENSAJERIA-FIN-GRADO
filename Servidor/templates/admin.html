@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EasyCom - Panel de Administración</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <style>
+    /* ---- Admin específico ---- */
+    .admin-layout {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .admin-nav {
+      background: #1e2130;
+      display: flex;
+      gap: 4px;
+      padding: 0 20px;
+      flex-shrink: 0;
+      border-bottom: 2px solid #667eea;
+    }
+
+    .admin-nav-btn {
+      background: none;
+      border: none;
+      color: #888;
+      padding: 14px 18px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: 600;
+      border-bottom: 3px solid transparent;
+      margin-bottom: -2px;
+      transition: color 0.15s;
+    }
+    .admin-nav-btn:hover { color: #ccc; }
+    .admin-nav-btn.activo { color: #fff; border-bottom-color: #667eea; }
+
+    .admin-contenido {
+      flex: 1;
+      overflow-y: auto;
+      padding: 28px;
+      background: #f0f2f5;
+    }
+
+    /* ---- Tarjetas de stats ---- */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+
+    .stat-card {
+      background: white;
+      border-radius: 10px;
+      padding: 20px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      border-left: 4px solid #667eea;
+    }
+    .stat-card.verde  { border-left-color: #4caf50; }
+    .stat-card.rojo   { border-left-color: #e53935; }
+    .stat-card.naranja{ border-left-color: #ff9800; }
+
+    .stat-numero {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #333;
+      line-height: 1;
+    }
+    .stat-label {
+      font-size: 0.82rem;
+      color: #888;
+      margin-top: 6px;
+    }
+
+    /* ---- Tablas ---- */
+    .admin-tabla-wrap {
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      overflow: hidden;
+      margin-bottom: 24px;
+    }
+
+    .admin-tabla-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid #eee;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .admin-tabla-header h3 {
+      font-size: 1rem;
+      color: #333;
+      margin: 0;
+    }
+
+    .admin-tabla-header input {
+      padding: 7px 12px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 0.88rem;
+      outline: none;
+      width: 220px;
+    }
+    .admin-tabla-header input:focus { border-color: #667eea; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+    }
+    th {
+      background: #f8f8f8;
+      padding: 10px 16px;
+      text-align: left;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      border-bottom: 1px solid #eee;
+    }
+    td {
+      padding: 10px 16px;
+      border-bottom: 1px solid #f0f0f0;
+      color: #444;
+      vertical-align: middle;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #fafafa; }
+
+    .badge-canal {
+      background: #667eea20;
+      color: #667eea;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 0.78rem;
+      font-weight: 600;
+    }
+    .badge-canal.dm     { background: #4caf5020; color: #4caf50; }
+    .badge-canal.global { background: #ff980020; color: #e65100; }
+    .badge-canal.directivos { background: #9c27b020; color: #7b1fa2; }
+
+    .btn-expulsar {
+      background: #e5393520;
+      color: #e53935;
+      border: 1px solid #e5393540;
+      padding: 4px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.82rem;
+      font-weight: 600;
+      transition: background 0.15s;
+    }
+    .btn-expulsar:hover { background: #e5393535; }
+
+    .punto-verde { color: #4caf50; }
+    .punto-rojo  { color: #e53935; }
+
+    /* ---- Gráfico de barras simple ---- */
+    .grafico-wrap {
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      padding: 20px;
+      margin-bottom: 24px;
+    }
+    .grafico-wrap h3 { font-size: 1rem; color: #333; margin-bottom: 16px; }
+
+    .barra-fila {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+      font-size: 0.85rem;
+    }
+    .barra-label { width: 110px; color: #555; text-align: right; flex-shrink: 0; }
+    .barra-track {
+      flex: 1;
+      background: #f0f0f0;
+      border-radius: 4px;
+      height: 20px;
+      overflow: hidden;
+    }
+    .barra-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #667eea, #764ba2);
+      border-radius: 4px;
+      transition: width 0.6s ease;
+    }
+    .barra-valor { width: 40px; color: #888; font-size: 0.8rem; }
+
+    /* ---- Sección oculta ---- */
+    .seccion { display: none; }
+    .seccion.activa { display: block; }
+
+    /* ---- Paginación ---- */
+    .paginacion {
+      display: flex;
+      justify-content: flex-end;
+      gap: 6px;
+      padding: 12px 16px;
+      border-top: 1px solid #eee;
+    }
+    .paginacion button {
+      background: none;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 5px 12px;
+      cursor: pointer;
+      font-size: 0.82rem;
+      color: #555;
+      transition: background 0.15s;
+    }
+    .paginacion button:hover     { background: #f0f0f0; }
+    .paginacion button.activo    { background: #667eea; color: white; border-color: #667eea; }
+    .paginacion button:disabled  { opacity: 0.4; cursor: default; }
+
+    /* ---- Sin datos ---- */
+    .sin-datos {
+      text-align: center;
+      color: #bbb;
+      padding: 40px;
+      font-size: 0.9rem;
+    }
+
+    /* ---- Select de canal ---- */
+    .admin-select {
+      padding: 7px 12px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 0.88rem;
+      outline: none;
+      background: white;
+    }
+    .admin-select:focus { border-color: #667eea; }
+
+    /* ---- Acciones de canal ---- */
+    .canal-card {
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      padding: 18px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .canal-card-info { display: flex; flex-direction: column; gap: 4px; }
+    .canal-card-nombre { font-weight: 700; color: #333; font-size: 0.95rem; }
+    .canal-card-stats  { font-size: 0.8rem; color: #888; }
+
+    .btn-borrar-canal {
+      background: #e5393515;
+      color: #e53935;
+      border: 1px solid #e5393530;
+      padding: 6px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.82rem;
+      font-weight: 600;
+      transition: background 0.15s;
+    }
+    .btn-borrar-canal:hover { background: #e5393530; }
+
+    /* ---- Toast confirmación ---- */
+    .confirm-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.4);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+    .confirm-overlay.show { display: flex; }
+    .confirm-box {
+      background: white;
+      border-radius: 12px;
+      padding: 28px;
+      max-width: 380px;
+      width: 90%;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    }
+    .confirm-box h4 { margin-bottom: 10px; color: #333; }
+    .confirm-box p  { color: #666; font-size: 0.9rem; margin-bottom: 20px; }
+    .confirm-btns   { display: flex; gap: 10px; justify-content: flex-end; }
+    .btn-cancelar {
+      background: #f0f0f0; border: none; padding: 8px 18px;
+      border-radius: 6px; cursor: pointer; font-size: 0.9rem;
+    }
+    .btn-confirmar {
+      background: #e53935; color: white; border: none; padding: 8px 18px;
+      border-radius: 6px; cursor: pointer; font-size: 0.9rem; font-weight: 600;
+    }
+  </style>
+</head>
+<body class="chat-page">
+
+  <!-- Cabecera -->
+  <div class="chat-header">
+    <div class="header-izquierda">
+      <img src="/static/logotipo.png" class="logo" width="42" height="42">
+      <h2>EasyCom — Panel de Administración</h2>
+    </div>
+    <div class="header-derecha">
+      <span id="nombre-admin" class="user-badge">Admin</span>
+      <a href="/chat" style="text-decoration:none">
+        <button class="logout-btn">← Volver al chat</button>
+      </a>
+      <button onclick="cerrarSesion()" class="logout-btn">Cerrar sesión</button>
+    </div>
+  </div>
+
+  <div class="admin-layout">
+
+    <!-- Navegación de secciones -->
+    <div class="admin-nav">
+      <button class="admin-nav-btn activo" onclick="irA('estadisticas', this)">📊 Estadísticas</button>
+      <button class="admin-nav-btn" onclick="irA('historial', this)">💬 Historial</button>
+      <button class="admin-nav-btn" onclick="irA('usuarios', this)">👥 Usuarios conectados</button>
+      <button class="admin-nav-btn" onclick="irA('canales', this)"># Canales</button>
+    </div>
+
+    <div class="admin-contenido">
+
+      <!-- ================= ESTADÍSTICAS ================= -->
+      <div id="sec-estadisticas" class="seccion activa">
+
+        <div class="stats-grid" id="stats-grid">
+          <div class="stat-card verde">
+            <div class="stat-numero" id="stat-usuarios">—</div>
+            <div class="stat-label">Usuarios conectados</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-numero" id="stat-mensajes-hoy">—</div>
+            <div class="stat-label">Mensajes hoy</div>
+          </div>
+          <div class="stat-card naranja">
+            <div class="stat-numero" id="stat-mensajes-total">—</div>
+            <div class="stat-label">Mensajes totales</div>
+          </div>
+          <div class="stat-card rojo">
+            <div class="stat-numero" id="stat-dms">—</div>
+            <div class="stat-label">DMs totales</div>
+          </div>
+        </div>
+
+        <div class="grafico-wrap">
+          <h3>Mensajes por canal</h3>
+          <div id="grafico-canales"><p class="sin-datos">Cargando...</p></div>
+        </div>
+
+        <div class="grafico-wrap">
+          <h3>Usuarios más activos</h3>
+          <div id="grafico-usuarios"><p class="sin-datos">Cargando...</p></div>
+        </div>
+
+      </div>
+
+      <!-- ================= HISTORIAL ================= -->
+      <div id="sec-historial" class="seccion">
+
+        <div class="admin-tabla-wrap">
+          <div class="admin-tabla-header">
+            <h3>Historial de mensajes</h3>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <select class="admin-select" id="filtro-canal" onchange="cargarHistorialAdmin()">
+                <option value="">Todos los canales</option>
+                <option value="global">Global</option>
+                <option value="directivos">Directivos</option>
+              </select>
+              <input type="text" id="filtro-usuario" placeholder="Filtrar por usuario..." oninput="cargarHistorialAdmin()">
+            </div>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Hora</th>
+                <th>Canal</th>
+                <th>Usuario</th>
+                <th>Mensaje</th>
+              </tr>
+            </thead>
+            <tbody id="tabla-historial">
+              <tr><td colspan="4" class="sin-datos">Cargando...</td></tr>
+            </tbody>
+          </table>
+          <div class="paginacion" id="paginacion-historial"></div>
+        </div>
+
+      </div>
+
+      <!-- ================= USUARIOS ================= -->
+      <div id="sec-usuarios" class="seccion">
+
+        <div class="admin-tabla-wrap">
+          <div class="admin-tabla-header">
+            <h3>Usuarios conectados ahora</h3>
+            <button class="logout-btn" onclick="cargarUsuarios()" style="font-size:0.82rem">↻ Actualizar</button>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Estado</th>
+                <th>Nombre</th>
+                <th>Usuario</th>
+                <th>Departamento</th>
+                <th>Rol</th>
+                <th>Dispositivo</th>
+                <th>IP</th>
+                <th>Acción</th>
+              </tr>
+            </thead>
+            <tbody id="tabla-usuarios">
+              <tr><td colspan="6" class="sin-datos">Cargando...</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+
+      <!-- ================= CANALES ================= -->
+      <div id="sec-canales" class="seccion">
+        <div id="lista-canales"><p class="sin-datos">Cargando...</p></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Diálogo de confirmación -->
+  <div class="confirm-overlay" id="confirm-overlay">
+    <div class="confirm-box">
+      <h4 id="confirm-titulo">¿Estás seguro?</h4>
+      <p id="confirm-texto"></p>
+      <div class="confirm-btns">
+        <button class="btn-cancelar" onclick="cerrarConfirm()">Cancelar</button>
+        <button class="btn-confirmar" id="confirm-ok">Confirmar</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+  <script>
+    document.getElementById("nombre-admin").textContent =
+      sessionStorage.getItem("display_name") || "Admin";
+
+    var socket = io();
+
+    // Actualizar usuarios en tiempo real
+    socket.on("lista_usuarios", function() {
+      if (document.getElementById("sec-usuarios").classList.contains("activa")) {
+        cargarUsuarios();
+      }
+      cargarStats();
+    });
+
+    // =============================================
+    // NAVEGACIÓN
+    // =============================================
+
+    function irA(seccion, btn) {
+      document.querySelectorAll(".seccion").forEach(function(s) { s.classList.remove("activa"); });
+      document.querySelectorAll(".admin-nav-btn").forEach(function(b) { b.classList.remove("activo"); });
+      document.getElementById("sec-" + seccion).classList.add("activa");
+      btn.classList.add("activo");
+
+      if (seccion === "estadisticas") { cargarStats(); }
+      if (seccion === "historial")    { cargarHistorialAdmin(); }
+      if (seccion === "usuarios")     { cargarUsuarios(); }
+      if (seccion === "canales")      { cargarCanales(); }
+    }
+
+    // =============================================
+    // ESTADÍSTICAS
+    // =============================================
+
+    function cargarStats() {
+      fetch("/admin/stats").then(r => r.json()).then(function(data) {
+        document.getElementById("stat-usuarios").textContent     = data.usuarios_conectados;
+        document.getElementById("stat-mensajes-hoy").textContent = data.mensajes_hoy;
+        document.getElementById("stat-mensajes-total").textContent = data.mensajes_total;
+        document.getElementById("stat-dms").textContent          = data.dms_total;
+
+        renderGrafico("grafico-canales", data.por_canal);
+        renderGrafico("grafico-usuarios", data.por_usuario);
+      }).catch(function() {});
+    }
+
+    function renderGrafico(id, datos) {
+      var el = document.getElementById(id);
+      if (!datos || datos.length === 0) {
+        el.innerHTML = '<p class="sin-datos">Sin datos</p>';
+        return;
+      }
+      var max = datos[0].total;
+      el.innerHTML = datos.map(function(d) {
+        var pct = max > 0 ? Math.round(d.total / max * 100) : 0;
+        return '<div class="barra-fila">' +
+          '<div class="barra-label">' + escHtml(d.nombre) + '</div>' +
+          '<div class="barra-track"><div class="barra-fill" style="width:' + pct + '%"></div></div>' +
+          '<div class="barra-valor">' + d.total + '</div>' +
+          '</div>';
+      }).join("");
+    }
+
+    // =============================================
+    // HISTORIAL
+    // =============================================
+
+    var paginaHistorial = 1;
+    var porPagina = 30;
+
+    function cargarHistorialAdmin(pagina) {
+      paginaHistorial = pagina || 1;
+      var canal   = document.getElementById("filtro-canal").value;
+      var usuario = document.getElementById("filtro-usuario").value.trim();
+      var url = "/admin/historial?pagina=" + paginaHistorial + "&por_pagina=" + porPagina;
+      if (canal)   url += "&canal=" + encodeURIComponent(canal);
+      if (usuario) url += "&usuario=" + encodeURIComponent(usuario);
+
+      fetch(url).then(r => r.json()).then(function(data) {
+        var tbody = document.getElementById("tabla-historial");
+
+        if (data.mensajes.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="4" class="sin-datos">No hay mensajes</td></tr>';
+          document.getElementById("paginacion-historial").innerHTML = "";
+          return;
+        }
+
+        tbody.innerHTML = data.mensajes.map(function(m) {
+          var canalClass = m.canal.startsWith("dm:") ? "dm" : m.canal;
+          var canalTexto = m.canal.startsWith("dm:") ? "DM" : m.canal;
+          return '<tr>' +
+            '<td>' + escHtml(m.fecha) + '</td>' +
+            '<td><span class="badge-canal ' + escHtml(canalClass) + '">' + escHtml(canalTexto) + '</span></td>' +
+            '<td>' + escHtml(m.usuario) + '</td>' +
+            '<td>' + escHtml(m.mensaje) + '</td>' +
+            '</tr>';
+        }).join("");
+
+        renderPaginacion("paginacion-historial", data.total, paginaHistorial, porPagina, cargarHistorialAdmin);
+      }).catch(function() {});
+    }
+
+    function renderPaginacion(id, total, pagina, porPag, fn) {
+      var totalPags = Math.ceil(total / porPag);
+      var el = document.getElementById(id);
+      if (totalPags <= 1) { el.innerHTML = ""; return; }
+
+      var html = '<button onclick="' + fn.name + '(' + (pagina - 1) + ')" ' + (pagina <= 1 ? 'disabled' : '') + '>‹</button>';
+      for (var i = 1; i <= totalPags; i++) {
+        if (i === pagina || i === 1 || i === totalPags || Math.abs(i - pagina) <= 1) {
+          html += '<button class="' + (i === pagina ? 'activo' : '') + '" onclick="' + fn.name + '(' + i + ')">' + i + '</button>';
+        } else if (Math.abs(i - pagina) === 2) {
+          html += '<button disabled>…</button>';
+        }
+      }
+      html += '<button onclick="' + fn.name + '(' + (pagina + 1) + ')" ' + (pagina >= totalPags ? 'disabled' : '') + '>›</button>';
+      el.innerHTML = html;
+    }
+
+    // =============================================
+    // USUARIOS
+    // =============================================
+
+    function cargarUsuarios() {
+      fetch("/admin/usuarios").then(r => r.json()).then(function(usuarios) {
+        var tbody = document.getElementById("tabla-usuarios");
+        if (usuarios.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="6" class="sin-datos">No hay usuarios conectados</td></tr>';
+          return;
+        }
+        tbody.innerHTML = usuarios.map(function(u) {
+          return '<tr>' +
+            '<td><span class="punto-verde">●</span></td>' +
+            '<td>' + escHtml(u.display_name) + '</td>' +
+            '<td>' + escHtml(u.username) + '</td>' +
+            '<td>' + escHtml(u.departamento || '—') + '</td>' +
+            '<td>' + (u.es_directivo ? '👔 Directivo' : 'Usuario') + '</td>' +
+            '<td style="font-size:0.82rem;color:#555">' + escHtml(u.dispositivo || '—') + '</td>' +
+            '<td style="font-size:0.82rem;color:#888;font-family:monospace">' + escHtml(u.ip || '—') + '</td>' +
+            '<td><button class="btn-expulsar" onclick="confirmarExpulsar(\'' + escHtml(u.username) + '\', \'' + escHtml(u.display_name) + '\')">Expulsar</button></td>' +
+            '</tr>';
+        }).join("");
+      }).catch(function() {});
+    }
+
+    function confirmarExpulsar(username, displayName) {
+      mostrarConfirm(
+        "Expulsar usuario",
+        "¿Quieres desconectar a " + displayName + " del chat?",
+        function() {
+          fetch("/admin/expulsar", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ username: username })
+          }).then(function() {
+            cargarUsuarios();
+          });
+        }
+      );
+    }
+
+    // =============================================
+    // CANALES
+    // =============================================
+
+    function cargarCanales() {
+      fetch("/admin/canales").then(r => r.json()).then(function(canales) {
+        var el = document.getElementById("lista-canales");
+        if (canales.length === 0) {
+          el.innerHTML = '<p class="sin-datos">No hay canales con mensajes</p>';
+          return;
+        }
+        el.innerHTML = canales.map(function(c) {
+          var esPrivado = c.canal.startsWith("dm:");
+          var nombre    = esPrivado ? "DM: " + c.canal.replace("dm:", "").replace(":", " ↔ ") : "# " + c.canal;
+          return '<div class="canal-card">' +
+            '<div class="canal-card-info">' +
+              '<div class="canal-card-nombre">' + escHtml(nombre) + '</div>' +
+              '<div class="canal-card-stats">' + c.total + ' mensajes · último: ' + escHtml(c.ultimo) + '</div>' +
+            '</div>' +
+            '<button class="btn-borrar-canal" onclick="confirmarBorrarCanal(\'' + escHtml(c.canal) + '\', \'' + escHtml(nombre) + '\')">🗑 Borrar historial</button>' +
+          '</div>';
+        }).join("");
+      }).catch(function() {});
+    }
+
+    function confirmarBorrarCanal(canal, nombre) {
+      mostrarConfirm(
+        "Borrar historial",
+        "¿Quieres borrar todos los mensajes de \"" + nombre + "\"? Esta acción no se puede deshacer.",
+        function() {
+          fetch("/admin/borrar_canal", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ canal: canal })
+          }).then(function() {
+            cargarCanales();
+            cargarStats();
+          });
+        }
+      );
+    }
+
+    // =============================================
+    // CONFIRM DIALOG
+    // =============================================
+
+    var _confirmCallback = null;
+
+    function mostrarConfirm(titulo, texto, callback) {
+      document.getElementById("confirm-titulo").textContent = titulo;
+      document.getElementById("confirm-texto").textContent  = texto;
+      _confirmCallback = callback;
+      document.getElementById("confirm-overlay").classList.add("show");
+      document.getElementById("confirm-ok").onclick = function() {
+        cerrarConfirm();
+        if (_confirmCallback) _confirmCallback();
+      };
+    }
+
+    function cerrarConfirm() {
+      document.getElementById("confirm-overlay").classList.remove("show");
+    }
+
+    // =============================================
+    // HELPERS
+    // =============================================
+
+    function escHtml(str) {
+      return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    function cerrarSesion() {
+      fetch("/logout");
+      sessionStorage.clear();
+      window.location.href = "/";
+    }
+
+    // Cargar stats al inicio
+    cargarStats();
+  </script>
+
+</body>
+</html>

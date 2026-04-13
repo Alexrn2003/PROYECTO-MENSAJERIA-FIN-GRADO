@@ -2,6 +2,7 @@ flask
 flask-cors
 flask-socketio
 ldap3
-eventlet
 python-dotenv
-flask-limiter
+pyOpenSSL
+waitress
+gunicorn
